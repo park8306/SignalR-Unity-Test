@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Threading.Tasks;
 using System;
@@ -13,7 +13,7 @@ public class CommandHub : MonoBehaviour
     {
         Debug.Log("Hello World!");
 
-        transform.Find("Button").GetComponent<Button>().onClick.AddListener(Send);
+        transform.Find("Button").GetComponent<Button>().onClick.AddListener(Login);
 
         connection = new HubConnectionBuilder()
             .WithUrl(baseURL)
@@ -26,29 +26,61 @@ public class CommandHub : MonoBehaviour
 
         Connect();
     }
-    void OnReceiveMessage(string message)
+    void OnReceiveMessage(Command command, string jsonStr)
     {
         lock (mainThreadFn)
         {
             mainThreadFn.Add(() =>
             {
-                Debug.Log($"{message}" + "!!!!");
-                Debug.Log(transform.name);
-                Debug.Log(transform.position);
+                OnReceiveCommand(command, jsonStr);
             });
+        }
+    }
+
+    private void OnReceiveCommand(Command command, string jsonStr)
+    {
+        switch(command)
+        {
+            case Command.ResultLogin:
+                ResultLogin resultLogin = JsonUtility.FromJson<ResultLogin>(jsonStr);
+                print(resultLogin.gold);
+                break;
+            default:
+                Debug.LogError($"{command} : 아직 구현하지 않은 메시지");
+                break;
         }
     }
 
     private async void Connect()
     {
-        connection.On<string>("ClientReceiveMessage", OnReceiveMessage);
+        connection.On<Command, string>("ClientReceiveMessage", OnReceiveMessage);
         await connection.StartAsync();
+
+        Login();
     }
     public string message = "Hello!";
-    private void Send()
+    private void Login()
     {
-        connection.InvokeAsync("ServerReceiveMessage", message);
+        // 로그인 명령...
+
+        RequestLogin request = new RequestLogin();
+        request.deviceID = SystemInfo.deviceUniqueIdentifier;
+        string json = JsonUtility.ToJson(request);
+        connection.InvokeAsync("ServerReceiveMessage", Command.RequestLogin, json);
+
+        SendToServer(request);
+        // 스테이지 엔터
+        // 스테이지 클리어.
+        // 상품 구입.
+        //connection.InvokeAsync("ServerReceiveMessage",command, jsonString);
     }
+
+    private void SendToServer(RequestMsg request)
+    {
+        string json = JsonUtility.ToJson(request);
+        connection.InvokeAsync("ServerReceiveMessage", request.command, json);
+    }
+
     //
     List<Action> mainThreadFn = new List<Action>();
     private void Update()
