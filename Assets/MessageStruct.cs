@@ -34,6 +34,13 @@ public enum Command
     ResultReward = 31,
 }
 
+public enum ErrorCode
+{
+    Succeed = 0, // 성공 에러없음
+
+    Invaild_Reward_Type = 1,
+}
+
 [Serializable]
 public class MsgHeader
 {
@@ -47,6 +54,8 @@ public class MsgHeader
 [Serializable]
 public class RequestMsg : MsgHeader
 {
+    [JsonInclude]
+    public int userID;
     public RequestMsg(Command _command) : base(_command) { }
 }
 
@@ -55,7 +64,7 @@ public class ResultMsg : MsgHeader
 {
     public ResultMsg(Command command) : base(command) { }
     [JsonInclude]
-    public int result;
+    public ErrorCode result;
 }
 
 public class RequestLogin : RequestMsg
