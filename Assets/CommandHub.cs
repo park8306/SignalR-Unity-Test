@@ -4,16 +4,18 @@ using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using Newtonsoft.Json;
 
 public class CommandHub : MonoBehaviour
 {
     private static HubConnection connection;
-    public string baseURL = "http://localhost:5001/command";
+    public string baseURL = "https://localhost:5001/command";
     void Start()
     {
         Debug.Log("Hello World!");
 
-        transform.Find("Button").GetComponent<Button>().onClick.AddListener(Login);
+        transform.Find("Button").GetComponent<Button>()
+            .onClick.AddListener(GetComponent<GameSimulator>().RequestLogin);
 
         connection = new HubConnectionBuilder()
             .WithUrl(baseURL)
@@ -39,14 +41,13 @@ public class CommandHub : MonoBehaviour
 
     private void OnReceiveCommand(Command command, string jsonStr)
     {
-        switch(command)
+        switch (command)
         {
             case Command.ResultLogin:
-                ResultLogin resultLogin = JsonUtility.FromJson<ResultLogin>(jsonStr);
-                print(resultLogin.gold);
+                GetComponent<GameSimulator>().ResultLogin(jsonStr);
                 break;
             default:
-                Debug.LogError($"{command} : 아직 구현하지 않은 메시지");
+                Debug.LogError($"{command}:아직 구현하지 안은 메시지입니다");
                 break;
         }
     }
@@ -56,41 +57,29 @@ public class CommandHub : MonoBehaviour
         connection.On<Command, string>("ClientReceiveMessage", OnReceiveMessage);
         await connection.StartAsync();
 
-        Login();
+
+        GetComponent<GameSimulator>().RequestLogin();
     }
     public string message = "Hello!";
-    private void Login()
+
+    public void SendToServer(RequestMsg request)
     {
-        // 로그인 명령...
+        string json = JsonConvert.SerializeObject(request);
+        connection.InvokeAsync("SeverReceiveMessage", request.command, json);
+    } 
 
-        RequestLogin request = new RequestLogin();
-        request.deviceID = SystemInfo.deviceUniqueIdentifier;
-        string json = JsonUtility.ToJson(request);
-        connection.InvokeAsync("ServerReceiveMessage", Command.RequestLogin, json);
-
-        SendToServer(request);
-        // 스테이지 엔터
-        // 스테이지 클리어.
-        // 상품 구입.
-        //connection.InvokeAsync("ServerReceiveMessage",command, jsonString);
-    }
-
-    private void SendToServer(RequestMsg request)
-    {
-        string json = JsonUtility.ToJson(request);
-        connection.InvokeAsync("ServerReceiveMessage", request.command, json);
-    }
-
-    //
     List<Action> mainThreadFn = new List<Action>();
+
     private void Update()
     {
         lock (mainThreadFn)
         {
-            if(mainThreadFn.Count>0)
-            { 
+            if (mainThreadFn.Count > 0)
+            {
                 foreach (var item in mainThreadFn)
+                {
                     item();
+                }
                 mainThreadFn.Clear();
             }
         }

@@ -1,7 +1,9 @@
 ﻿using System;
+using Blazor.DB;
 using System.Collections;
 using System.Collections.Generic;
 #if UNITY_5_3_OR_NEWER
+using Newtonsoft.Json;
 using UnityEngine;
 internal class JsonIncludeAttribute : Attribute
 {
@@ -9,30 +11,25 @@ internal class JsonIncludeAttribute : Attribute
 #else
 using System.Text.Json.Serialization;
 #endif
+
 public enum Command
 {
     None,
-    // 로그인
-    RequestLogin    = 1,
-    ResultLogin     = 2,
+    // 로그인.
+    RequestLogin = 1,
+    ResultLogin = 2,
 
     // 스테이지 엔터/클리어
     RequestStageEnter = 10,
-    ResultStageEnter  = 11,
+    ResultStageEnter = 11,
     RequestStageClear = 12,
-    ResultStageClear  = 13,
+    ResultStageClear = 13,
 
     // 아이템 구입
     RequestBuyItem = 20,
     ResultBuyItem = 21,
-
-    // 
 }
-//public class MessageStruct : MonoBehaviour
-//{
 
-
-//}
 [Serializable]
 public class MsgHeader
 {
@@ -56,18 +53,21 @@ public class ResultMsg : MsgHeader
     [JsonInclude]
     public int result;
 }
+
 public class RequestLogin : RequestMsg
 {
+    [JsonInclude]
     public string deviceID;
 
     public RequestLogin() : base(Command.RequestLogin) { }
 }
 
-public class ResultLogin : RequestMsg
+
+public class ResultLogin : ResultMsg
 {
     public ResultLogin() : base(Command.ResultLogin) { }
     [JsonInclude]
-    public int id;
+    public Account account;
     [JsonInclude]
-    public int gold;
-}//
+    public Userinfo userinfo;
+}
