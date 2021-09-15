@@ -28,6 +28,10 @@ public enum Command
     // 아이템 구입
     RequestBuyItem = 20,
     ResultBuyItem = 21,
+
+    // 보상 요청
+    RequestReward = 30,
+    ResultReward = 31,
 }
 
 [Serializable]
@@ -62,6 +66,21 @@ public class RequestLogin : RequestMsg
     public RequestLogin() : base(Command.RequestLogin) { }
 }
 
+public class RequestReward : RequestMsg
+{
+    [JsonInclude]
+    public string rewardType;
+
+    public RequestReward() : base(Command.RequestLogin) { }
+}
+public class ResultReward : ResultMsg
+{
+    public ResultReward() : base(Command.ResultReward) { }
+    [JsonInclude]
+    public int rewardGold;
+    [JsonInclude]
+    public int currentGold;
+}
 
 public class ResultLogin : ResultMsg
 {

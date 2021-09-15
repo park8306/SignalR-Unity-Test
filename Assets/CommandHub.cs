@@ -14,9 +14,6 @@ public class CommandHub : MonoBehaviour
     {
         Debug.Log("Hello World!");
 
-        transform.Find("Button").GetComponent<Button>()
-            .onClick.AddListener(GetComponent<GameSimulator>().RequestLogin);
-
         connection = new HubConnectionBuilder()
             .WithUrl(baseURL)
             .Build();
