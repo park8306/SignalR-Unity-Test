@@ -59,8 +59,24 @@ public class GameSimulator : MonoBehaviour
     }
     public void ResultLogin(string jsonStr)
     {
-        ResultLogin resultLogin = JsonUtility.FromJson<ResultLogin>(jsonStr);
-        print(resultLogin.userinfo.Gold);
+        ResultLogin result = JsonUtility.FromJson<ResultLogin>(jsonStr);
+        if (ReturnErrorExist(result.result))
+            return;
+        
+
+        print(result.userinfo.Gold);
+        UserData.Instance.userinfo = result.userinfo;
+        UserData.Instance.account = result.account;
+    }
+
+    private bool ReturnErrorExist(ErrorCode result)
+    {
+        if (result != ErrorCode.Succeed)
+        {
+            Debug.LogError(result);
+            return true;
+        }
+        return false;
     }
     #endregion 로그인
     private void SendToServer(RequestMsg request)
@@ -80,6 +96,12 @@ public class GameSimulator : MonoBehaviour
     void ResultReward(string jsonStr)
     {
         ResultReward result = JsonConvert.DeserializeObject<ResultReward>(jsonStr);
+        if(result.result != ErrorCode.Succeed)
+        {
+            Debug.LogError(result.result);
+            return;
+        }
+
         print(result.rewardGold);
         print(result.currentGold);
         UserData.Instance.userinfo.Gold = result.currentGold;

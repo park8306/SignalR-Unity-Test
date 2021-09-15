@@ -518,7 +518,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseButton: {fileID: 0}
-  rewardType: 100Gold
+  rewardType: Gold100
 --- !u!1 &1658310174
 GameObject:
   m_ObjectHideFlags: 0
