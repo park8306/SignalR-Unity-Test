@@ -32,6 +32,9 @@ public enum Command
     // 보상 요청
     RequestReward = 30,
     ResultReward = 31,
+
+    RequestChangeNickname = 40,
+    ResultChangeNickname = 41,
 }
 
 public enum ErrorCode
@@ -80,7 +83,7 @@ public class RequestReward : RequestMsg
     [JsonInclude]
     public string rewardType;
 
-    public RequestReward() : base(Command.RequestLogin) { }
+    public RequestReward() : base(Command.RequestReward) { }
 }
 public class ResultReward : ResultMsg
 {
@@ -98,4 +101,18 @@ public class ResultLogin : ResultMsg
     public Account account;
     [JsonInclude]
     public Userinfo userinfo;
+}
+class RequestChangeNickname : RequestMsg
+{
+    [JsonInclude]
+    public string newNickname;
+    public RequestChangeNickname() : base(Command.RequestChangeNickname) { }
+}
+
+public class ResultChangeNickname : ResultMsg
+{
+    public ResultChangeNickname() : base(Command.ResultChangeNickname) { }
+
+    [JsonInclude]
+    public string resultNickname;
 }

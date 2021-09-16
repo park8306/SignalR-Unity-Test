@@ -11,36 +11,27 @@ public class GameSimulator : MonoBehaviour
     class CommandInfo
     {
         public string name;
-        public Command requestCommand;
-
-        public Command resultCommand;
         public UnityAction requestFn;
         public UnityAction<string> resultFn;
-
-        public CommandInfo(string name, Command requestCommand, Command resultCommand, UnityAction requestFn, UnityAction<string> resultFn)
+        public CommandInfo(string name, UnityAction requestFn, UnityAction<string> resultFn)
         {
             this.name = name;
-            this.requestCommand = requestCommand;
-            this.resultCommand = resultCommand;
             this.requestFn = requestFn;
             this.resultFn = resultFn;
         }
     }
-
     CommandHub commandHub;
     public Button baseButton;
-    List<CommandInfo> commandInfo = new List<CommandInfo>();
-    // Start is called before the first frame update
+    Dictionary<Command, CommandInfo> commandInfos = new Dictionary<Command, CommandInfo>();
     void Awake()
     {
         commandHub = GetComponent<CommandHub>();
-        baseButton = GetComponentInChildren<Button>();
-        commandInfo.AddRange(new CommandInfo[] {
-            new CommandInfo("로그인", Command.RequestLogin, Command.ResultLogin, RequestLogin, ResultLogin),
-            new CommandInfo("보상", Command.RequestReward, Command.ResultReward, RequestReward, ResultReward)
-        });
 
-        foreach (var item in commandInfo)
+        commandInfos[Command.ResultLogin] = new CommandInfo("로그인", RequestLogin, ResultLogin);
+        commandInfos[Command.ResultReward] = new CommandInfo("보상", RequestReward, ResultReward);
+        commandInfos[Command.ResultChangeNickname] = new CommandInfo("보상", RequestReward, ResultReward);
+
+        foreach (var item in commandInfos.Values)
         {
             var newButton = Instantiate(baseButton, baseButton.transform.parent);
             newButton.GetComponentInChildren<Text>().text = item.name;
@@ -48,6 +39,23 @@ public class GameSimulator : MonoBehaviour
         }
         baseButton.gameObject.SetActive(false);
     }
+    private void SendToServer(RequestMsg request)
+    {
+        commandHub.SendToServer(request);
+    }
+
+    public void OnReceiveCommand(Command resultCommand, string jsonStr)
+    {
+        if (commandInfos.TryGetValue(resultCommand, out CommandInfo commandInfo))
+        {
+            commandInfo.resultFn(jsonStr);
+        }
+        else
+        {
+            Debug.LogError($"{resultCommand}:아직 구현하지 안은 메시지입니다");
+        }
+    }
+
     #region 로그인
     public void RequestLogin()
     {
@@ -59,59 +67,69 @@ public class GameSimulator : MonoBehaviour
     }
     public void ResultLogin(string jsonStr)
     {
-        ResultLogin result = JsonUtility.FromJson<ResultLogin>(jsonStr);
-        if (ReturnErrorExist(result.result))
-            return;
-        
+        ResultLogin result = JsonConvert.DeserializeObject<ResultLogin>(jsonStr);
 
-        print(result.userinfo.Gold);
+        if (ReturnIfErrorExist(result.result))
+            return;
+
+        print(result.userinfo.gold);
         UserData.Instance.userinfo = result.userinfo;
         UserData.Instance.account = result.account;
     }
 
-    private bool ReturnErrorExist(ErrorCode result)
+    #endregion 로그인
+    /// <summary>
+    /// 에러가 있다면 에러코드를 표시하고 true리턴
+    /// </summary>
+    /// <param name="result"></param>
+    /// <returns>에러 있으면 true</returns>
+    private bool ReturnIfErrorExist(ErrorCode result)
     {
         if (result != ErrorCode.Succeed)
         {
             Debug.LogError(result);
             return true;
         }
+
         return false;
     }
-    #endregion 로그인
-    private void SendToServer(RequestMsg request)
-    {
-        commandHub.SendToServer(request);
-    }
-
     #region 보상 요청
-
-    public string rewardType = "100Gold";
+    public string rewardType = "Gold100";
     void RequestReward()
     {
         RequestReward request = new RequestReward();
         request.rewardType = rewardType;
         SendToServer(request);
     }
-    void ResultReward(string jsonStr)
+    public void ResultReward(string jsonStr)
     {
         ResultReward result = JsonConvert.DeserializeObject<ResultReward>(jsonStr);
-        if(result.result != ErrorCode.Succeed)
+
+        if(ReturnIfErrorExist(result.result))
         {
-            Debug.LogError(result.result);
             return;
         }
 
         print(result.rewardGold);
         print(result.currentGold);
-        UserData.Instance.userinfo.Gold = result.currentGold;
+        UserData.Instance.userinfo.gold = result.currentGold;
     }
     #endregion
-    
-
-    // Update is called once per frame
-    void Update()
+    #region 닉네임 변경
+    private void RequestChangeNickname()
     {
-        
+        RequestChangeNickname request = new RequestChangeNickname();
+        request.newNickname = UserData.Instance.userinfo.nickname;
+        SendToServer(request);
     }
+    private void ResultChangeNickname(string jsonStr)
+    {
+        ResultChangeNickname result = JsonConvert.DeserializeObject<ResultChangeNickname>(jsonStr);
+
+        if (ReturnIfErrorExist(result.result))
+            return;
+
+        Debug.Log($"<color=green>{result.resultNickname}</color> 닉네임 변경됨");
+    }
+    #endregion
 }
