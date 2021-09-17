@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 
 public enum Command
 {
+    ResultError = -1,
     None,
     // 로그인.
     RequestLogin = 1,
@@ -35,6 +36,12 @@ public enum Command
 
     RequestChangeNickname = 40,
     ResultChangeNickname = 41,
+
+    RequestSendMessage = 50,
+    ResultSendMessage = 51,
+
+    RequestChangeChannel = 60,
+    ResultChangeChannel = 61,
 }
 
 public enum ErrorCode
@@ -42,6 +49,8 @@ public enum ErrorCode
     Succeed = 0, // 성공 에러없음
 
     Invaild_Reward_Type = 1,
+
+    SamePreviousGroupName = 2,
 }
 
 [Serializable]
@@ -115,4 +124,36 @@ public class ResultChangeNickname : ResultMsg
 
     [JsonInclude]
     public string resultNickname;
+}
+
+class RequestSendMessage : RequestMsg
+{
+    [JsonInclude]
+    public string newMessage;
+    public RequestSendMessage() : base(Command.RequestSendMessage) { }
+}
+
+public class ResultSendMessage : ResultMsg
+{
+    public ResultSendMessage() : base(Command.ResultSendMessage) { }
+
+    [JsonInclude]
+    public string senderName;
+    [JsonInclude]
+    public string message;
+}
+
+class RequestChangeChannel : RequestMsg
+{
+    [JsonInclude]
+    public string newChannelName;
+    public RequestChangeChannel() : base(Command.RequestChangeChannel) { }
+}
+
+public class ResultChangeChannel : ResultMsg
+{
+    public ResultChangeChannel() : base(Command.ResultChangeChannel) { }
+
+    [JsonInclude]
+    public string newChannelName;
 }

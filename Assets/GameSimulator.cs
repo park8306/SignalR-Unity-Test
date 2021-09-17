@@ -6,42 +6,52 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
+public class CommandInfo
+{
+    public string name;
+    public UnityAction requestFn;
+    public UnityAction<string> resultFn;
+    public CommandInfo(string name, UnityAction requestFn, UnityAction<string> resultFn)
+    {
+        this.name = name;
+        this.requestFn = requestFn;
+        this.resultFn = resultFn;
+    }
+}
 public class GameSimulator : MonoBehaviour
 {
-    class CommandInfo
-    {
-        public string name;
-        public UnityAction requestFn;
-        public UnityAction<string> resultFn;
-        public CommandInfo(string name, UnityAction requestFn, UnityAction<string> resultFn)
-        {
-            this.name = name;
-            this.requestFn = requestFn;
-            this.resultFn = resultFn;
-        }
-    }
+    
     CommandHub commandHub;
     public Button baseButton;
-    Dictionary<Command, CommandInfo> commandInfos = new Dictionary<Command, CommandInfo>();
+    public Dictionary<Command, CommandInfo> commandInfos = new Dictionary<Command, CommandInfo>();
     void Awake()
     {
         commandHub = GetComponent<CommandHub>();
-
+        commandInfos[Command.ResultError] = new CommandInfo("에러", null, ResultError);
         commandInfos[Command.ResultLogin] = new CommandInfo("로그인", RequestLogin, ResultLogin);
         commandInfos[Command.ResultReward] = new CommandInfo("보상", RequestReward, ResultReward);
-        commandInfos[Command.ResultChangeNickname] = new CommandInfo("보상", RequestReward, ResultReward);
-
+        commandInfos[Command.ResultChangeNickname] = new CommandInfo("닉네임 변경", RequestChangeNickname, ResultChangeNickname);
+    }
+    private void Start()
+    {
         foreach (var item in commandInfos.Values)
         {
+            if (item.requestFn == null)
+                continue;
             var newButton = Instantiate(baseButton, baseButton.transform.parent);
             newButton.GetComponentInChildren<Text>().text = item.name;
             newButton.onClick.AddListener(item.requestFn);
         }
-        baseButton.gameObject.SetActive(false);
+        baseButton.gameObject.SetActive(false); 
     }
-    private void SendToServer(RequestMsg request)
+    public void SendToServer(RequestMsg request)
     {
         commandHub.SendToServer(request);
+    }
+
+    private void ResultError(string errorDiscription)
+    {
+        Debug.LogError($"서버에서 받은 에러 내용: {errorDiscription}");
     }
 
     public void OnReceiveCommand(Command resultCommand, string jsonStr)
@@ -74,6 +84,7 @@ public class GameSimulator : MonoBehaviour
 
         print(result.userinfo.gold);
         UserData.Instance.userinfo = result.userinfo;
+        GetComponentInChildren<ChatUI>().currentChaanel.text = result.userinfo.lastChatGroup;
         UserData.Instance.account = result.account;
     }
 
@@ -83,7 +94,7 @@ public class GameSimulator : MonoBehaviour
     /// </summary>
     /// <param name="result"></param>
     /// <returns>에러 있으면 true</returns>
-    private bool ReturnIfErrorExist(ErrorCode result)
+    public bool ReturnIfErrorExist(ErrorCode result)
     {
         if (result != ErrorCode.Succeed)
         {
